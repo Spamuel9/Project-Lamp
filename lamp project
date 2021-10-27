@@ -2,6 +2,12 @@
 // PSEUDOCODE
 /*
 global variable lampMode;
+#include <LiquidCrystal.h>;
+LiquidCrystal lcd(7,8,9,10,11,12);
+
+
+
+
 
 void performButtonChecks ()
 {
@@ -14,8 +20,12 @@ void performButtonChecks ()
 }
 
 
-setup
+void setup()
 {
+
+lcd.begin(16,2); //sets lcd rows and columns
+lcd.setCursor(0,0);
+	
 	lcd.print "Turn off lights and press 1"
 	while ( (ir button is NOT pressed) AND (bluetooth button is NOT pressed) AND (button is NOT pressed) )
 	{
