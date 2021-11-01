@@ -119,3 +119,214 @@ loop
 	}
 }	
 */
+
+
+
+
+// Caleb's Test Build 1.0
+// UNTESTED! Discuss Diagram before testing code!
+//
+// To Do: Color LED Indicator, Bluetooth, Debugging
+
+#include <LiquidCrystal.h>
+#include <IRremote.h>
+LiquidCrystal lcd(2,3,4,5,6,7);
+
+
+
+const int photoPin = A0,  // Photoresistor pin
+  buttonPin = A1,         // Push Button pin
+  bluetoothPin1 = A2,     // Bluetooth pins
+  bluetoothPin2 = A3,     //
+  irPin = A4,             // IR Remote Receiver pin
+  pirPin = A5,            // Motion Sensor pin
+  indicatorPinBLUE = 9,   // Color LED pins
+  indicatorPinGREEN = 10, //
+  indicatorPinRED = 11,   //
+  lampPin = 12;           // Lamp LED pin
+
+
+
+int lampMode = 0,         // Variable for current lamp mode
+  timer,                  // Variable for the no-motion timer
+  conditionaLightLevel;   // Variable for the light level to check against
+
+
+
+IRrecv irrecv(irPin);
+decode_results results;
+
+
+
+void setup()
+{
+  Serial.begin(9600);
+  irrecv.enableIRIn();
+
+
+  // Defining pin modes (To Do: Color LED pins, Bluetooth Pins)
+  pinMode(buttonPin, INPUT_PULLUP);  
+  pinMode(pirPin, INPUT);
+  pinMode(lampPin, OUTPUT);
+
+  // To Do: Turn on Color LED (White maybe?) for setup for accurate reading from photoresistor
+
+  // Beginning LCD and running setup message
+  lcd.begin(16,2);
+  lcd.setCursor(0,0);  
+  lcd.print("Turn off lights");
+  lcd.setCursor(0,1);
+  lcd.print("& press a button");
+
+  // Run button Checks until a button is pressed (lampMode initialized at 0)
+  while (lampMode == 0)
+    performButtonChecks();
+
+  // Getting conditional light level
+  digitalWrite(lampPin, HIGH);
+  delay(100);
+  conditionaLightLevel = analogRead(photoPin) + (100);
+  digitalWrite(lampPin, LOW);
+
+  // Displaying confirmation message, setting lampMode to Auto, delay 1 second
+  lcd.clear();
+  lcd.print("Setup complete.");
+  lampMode = 3;
+  delay(1000);
+}
+
+
+
+void loop()
+{
+  // Lamp Mode MANUAL ON
+  // To Do: Color LED indicator ON (Green? Dim)
+  while (lampMode == 1)
+  {
+    lcd.clear();
+    lcd.print("Mode: On");    
+    digitalWrite(lampPin, HIGH);
+    performButtonChecks();
+  }
+
+
+
+  // Lamp Mode MANUAL OFF
+  // To Do: Color LED indicator ON (Red? Dim)
+  while (lampMode == 2)
+  {
+    lcd.clear();
+    lcd.print("Mode: Off");
+    digitalWrite(lampPin, LOW);
+    performButtonChecks();
+  }
+
+
+
+  // Lamp Mode AUTOMATIC
+  // To Do: Color LED indicator ON (Yellow? Dim)
+  while (lampMode == 3)
+  {
+    lcd.clear();
+    lcd.print("Mode: Auto");
+    if (analogRead(photoPin) < conditionaLightLevel)
+    {
+      digitalWrite(lampPin, HIGH);  
+      
+      if (digitalRead(pirPin) == LOW)
+      {
+        
+        lcd.setCursor(0,1);
+        lcd.print("                ");
+        lcd.setCursor(0,1);
+        lcd.print("No User Detected");
+        
+        timer = 0;
+        while ( ( (timer < 46) && (analogRead(photoPin) < conditionaLightLevel) ) && ( (digitalRead(pirPin) == LOW) && (lampMode == 3) ) )
+        {
+          Serial.println(timer);
+          if( (timer >= 10) && (timer < 15 ) )
+          {
+            lcd.setCursor(0,1);
+            lcd.print("                ");
+            lcd.setCursor(0,1);
+            lcd.print("No User Detected");
+          }
+          
+          else if (timer >= 15)
+          {
+            lcd.setCursor(0,0);
+            lcd.print("Standby in:");
+            lcd.setCursor(0,1);
+            lcd.print("    seconds     ");
+            lcd.setCursor(0,1);
+            lcd.print(45 - timer);
+          }
+          delay(500);
+          timer++;
+
+          performButtonChecks();
+          
+          if (timer == 45)
+            lampMode = 4;
+          
+        }
+      }
+    }
+    else
+    {
+      digitalWrite(lampPin, LOW);
+    }
+    performButtonChecks();
+  }
+
+
+
+  // Lamp Mode STANDBY
+  // To Do: Color LED ON (Orange? Very dim)
+  while (lampMode == 4)
+  {
+    lcd.clear();
+    lcd.print("Mode: Standby");
+    digitalWrite(lampPin, LOW);
+    performButtonChecks();
+    
+    if ( (digitalRead(pirPin) == HIGH) || (analogRead(photoPin) > conditionaLightLevel) )
+    {
+      lampMode = 3;
+    }
+  }  
+}
+
+
+
+// Sub-Function for button checks
+// To Do: Add Bluetooth Checks
+void performButtonChecks()
+{
+  if(irrecv.decode(&results))
+  {
+   if (results.value == 0xFF30CF)
+    {
+     lampMode = 1;
+    }
+    else if (results.value == 0xFF18E7)
+    {
+     lampMode = 2;
+    }
+    else if (results.value == 0xFF7A85)
+    {
+     lampMode = 3;
+    } 
+  }
+  if(digitalRead(buttonPin) == LOW)
+  {
+    lampMode++;
+    if(lampMode > 3)
+    {
+      lampMode = 1;
+    }
+  }
+  irrecv.resume();
+  delay(500);
+}
