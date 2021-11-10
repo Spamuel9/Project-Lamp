@@ -1,132 +1,60 @@
 //Our final project code
-// PSEUDOCODE
-/*
-global variable lampMode;
-#include <LiquidCrystal.h>;
-#include <IRremote.h>;
-LiquidCrystal lcd(7,8,9,10,11,12);
-
-
-
-
-
-void performButtonChecks ()
-{
-	if ( ( (ir button 1 = pressed) || (bluetooth button 1 = pressed) ) || (button 1 = pressed) )
-		lampMode = 1
-	else if ( ( (ir button 2 = pressed) || (bluetooth button 2 = pressed) ) || (button 2 = pressed) )
-		lampMode = 2
-	else if ( ( (ir button 3 = pressed) || (bluetooth button 3 = pressed) ) || (button 3 = pressed) )
-		lampMode = 3
-}
-
-
-void setup()
-{
-
-lcd.begin(16,2); //sets lcd rows and columns
-lcd.setCursor(0,0);
-	
-	lcd.print "Turn off lights and press 1"
-	while ( (ir button is NOT pressed) AND (bluetooth button is NOT pressed) AND (button is NOT pressed) )
-	{
-		delay(1000);
-	}
-	current light level = roomONlampOFF
-
-	delay(500)
-	lampPin = HIGH
-	delay(500)
-	current light level = roomONlampON
-	delay(500)
-	lampPin = LOW
-
-	lcd.print "Turn off lights and press 1"
-	while (ir button is NOT pressed)
-	{
-		delay(1000)
-	}
-	current light level = roomLightOff
-
-	delay(500)
-	lampPin = HIGH
-	delay(500)
-	current light level = roomOFFlampON
-	delay(500)
-	lampPin = LOW
-	lampMode = 3
-}
-
-loop
-{
-	while (lampMode = 1)
-	{
-		lampPin = HIGH
-		performButtonCheck
-		delay(1000)
-	}
-
-
-
-	while (lampMode = 2)
-	{
-		lampPin = LOW
-		performButtonCheck
-		delay(1000)
-	}
-
-
-
-	while (lampMode = 3)
-	{
-		if (current light level < conditional level)
-		{
-			lampPin = HIGH
-			if (NO motion detected)
-			{
-				for (int i = 0; i < 30; i++)
-				{
-					lcd.print "No user detected, powering off in "
-					lcd.print (30 - i)
-					lcd.print " seconds."
-					delay(1000)
-					performButtonCheck
-					if (motion detected)
-						break;
-					else if (current light level > conditional level)
-						break;
-					if (i = 30)
-						lampMode = 4 (standby mode);
-				}
-			}
-		}
-		else // (current light level > conditional level)
-		{
-			lampPin = LOW
-		}
-	}
-
-
-
-	while (lampMode = 4)
-	{
-		lampPin = LOW
-		performButtonCheck
-		if ( (motion detected) || (light level > conditional level) )
-		{
-			lampMode = 3
-		}
-	}
-}	
-*/
-
-
-
-
 // Caleb's Test Build 1.0
 // UNTESTED! Discuss Diagram before testing code!
 //
 // To Do: Color LED Indicator, Bluetooth, Debugging
+
+
+
+//////////////////////////////////////////////
+//        RemoteXY include library          //
+//////////////////////////////////////////////
+
+// RemoteXY select connection mode and include library 
+#define REMOTEXY_MODE__SOFTSERIAL
+#include <SoftwareSerial.h>
+
+#include <RemoteXY.h>
+
+// RemoteXY connection settings 
+#define REMOTEXY_SERIAL_RX 2
+#define REMOTEXY_SERIAL_TX 3
+#define REMOTEXY_SERIAL_SPEED 9600
+
+
+// RemoteXY configurate  
+#pragma pack(push, 1)
+uint8_t RemoteXY_CONF[] =
+  { 255,3,0,11,0,66,0,13,131,0,
+  1,2,11,42,12,12,65,31,49,0,
+  1,2,45,42,12,12,2,31,50,0,
+  1,2,80,42,12,12,2,31,51,0,
+  129,0,22,3,62,6,31,69,67,69,
+  32,80,82,79,74,69,67,84,32,76,
+  65,77,80,0,67,5,41,23,20,5,
+  2,26,11 };
+  
+// this structure defines all the variables and events of your control interface 
+struct {
+
+    // input variables
+  uint8_t Mode_1; // =1 if button pressed, else =0 
+  uint8_t Mode_2; // =1 if button pressed, else =0 
+  uint8_t Mode_3; // =1 if button pressed, else =0 
+
+    // output variables
+  char Mode_Label[11];  // string UTF8 end zero 
+
+    // other variable
+  uint8_t connect_flag;  // =1 if wire connected, else =0 
+
+} RemoteXY;
+#pragma pack(pop)
+
+/////////////////////////////////////////////
+//           END RemoteXY include          //
+/////////////////////////////////////////////
+
 
 #include <LiquidCrystal.h>
 #include <IRremote.h>
@@ -160,6 +88,7 @@ decode_results results;
 
 void setup()
 {
+  RemoteXY_Init ();
   Serial.begin(9600);
   irrecv.enableIRIn();
 
@@ -201,6 +130,7 @@ void loop()
 {
   // Lamp Mode MANUAL ON
   // To Do: Color LED indicator ON (Green? Dim)
+  RemoteXY_Handler ();
   while (lampMode == 1)
   {
     lcd.clear();
