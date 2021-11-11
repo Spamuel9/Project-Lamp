@@ -6,6 +6,20 @@
 
 
 
+//Our final project code
+// Caleb's Test Build 1.0
+// UNTESTED! Discuss Diagram before testing code!
+//
+// To Do: Color LED Indicator, Bluetooth, Debugging
+
+
+
+
+
+
+
+
+
 
 //////////////////////////////////////////////
 //        RemoteXY include library          //
@@ -57,8 +71,16 @@ struct {
 /////////////////////////////////////////////
 
 
+
+
+
+
+
+
+
+
 #include <LiquidCrystal.h>
-#include <IRremote.h>
+//#include <IRremote.h>
 LiquidCrystal lcd(2,3,4,5,6,7);
 
 
@@ -67,8 +89,8 @@ const int photoPin = A0,  // Photoresistor pin
   buttonPin = A1,         // Push Button pin
   bluetoothPin1 = A2,     // Bluetooth pins
   bluetoothPin2 = A3,     //
-  irPin = A4,             // IR Remote Receiver pin
-  pirPin = A5,            // Motion Sensor pin
+  // irPin = A5,             // IR Remote Receiver pin
+  pirPin = A4,            // Motion Sensor pin
   indicatorPinBLUE = 9,   // Color LED pins
   indicatorPinGREEN = 10, //
   indicatorPinRED = 11,   //
@@ -82,8 +104,8 @@ int lampMode = 0,         // Variable for current lamp mode
 
 
 
-IRrecv irrecv(irPin);
-decode_results results;
+//IRrecv irrecv(irPin);
+//decode_results results;
 
 
 
@@ -91,13 +113,16 @@ void setup()
 {
   RemoteXY_Init ();
   Serial.begin(9600);
-  irrecv.enableIRIn();
+  // irrecv.enableIRIn();
 
 
   // Defining pin modes (To Do: Color LED pins, Bluetooth Pins)
   pinMode(buttonPin, INPUT_PULLUP);  
   pinMode(pirPin, INPUT);
   pinMode(lampPin, OUTPUT);
+  pinMode(indicatorPinBLUE, OUTPUT);
+  pinMode(indicatorPinGREEN, OUTPUT);
+  pinMode(indicatorPinRED, OUTPUT);
 
   // To Do: Turn on Color LED (White maybe?) for setup for accurate reading from photoresistor
 
@@ -134,6 +159,11 @@ void loop()
   RemoteXY_Handler ();
   while (lampMode == 1)
   {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 50);
+    analogWrite(indicatorPinRED, LOW);
+
+    
     lcd.clear();
     lcd.print("Mode: On");    
     digitalWrite(lampPin, HIGH);
@@ -146,6 +176,12 @@ void loop()
   // To Do: Color LED indicator ON (Red? Dim)
   while (lampMode == 2)
   {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, LOW);
+    analogWrite(indicatorPinRED, 50);
+
+
+    
     lcd.clear();
     lcd.print("Mode: Off");
     digitalWrite(lampPin, LOW);
@@ -158,6 +194,11 @@ void loop()
   // To Do: Color LED indicator ON (Yellow? Dim)
   while (lampMode == 3)
   {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 25);
+    analogWrite(indicatorPinRED, 25);
+
+    
     lcd.clear();
     lcd.print("Mode: Auto");
     if (analogRead(photoPin) < conditionaLightLevel)
@@ -217,6 +258,11 @@ void loop()
   // To Do: Color LED ON (Orange? Very dim)
   while (lampMode == 4)
   {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 10);
+    analogWrite(indicatorPinRED, 25);
+
+    
     lcd.clear();
     lcd.print("Mode: Standby");
     digitalWrite(lampPin, LOW);
@@ -235,6 +281,7 @@ void loop()
 // To Do: Add Bluetooth Checks
 void performButtonChecks()
 {
+  /*
   if(irrecv.decode(&results))
   {
    if (results.value == 0xFF30CF)
@@ -250,6 +297,24 @@ void performButtonChecks()
      lampMode = 3;
     } 
   }
+  */
+  if(RemoteXY.Mode_1 != 0)
+  {
+    RemoteXY.Mode_1 = 0;
+    lampMode = 1;
+  }
+  else if(RemoteXY.Mode_2 != 0)
+  {
+    RemoteXY.Mode_2 = 0;
+    lampMode = 2;
+  }
+  else if(RemoteXY.Mode_3 != 0)
+  {
+    RemoteXY.Mode_3 = 0;
+    lampMode = 3;
+  }
+
+  
   if(digitalRead(buttonPin) == LOW)
   {
     lampMode++;
@@ -258,6 +323,7 @@ void performButtonChecks()
       lampMode = 1;
     }
   }
-  irrecv.resume();
+  
+  //irrecv.resume();
   delay(500);
 }
