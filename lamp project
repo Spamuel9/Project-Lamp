@@ -1,3 +1,5 @@
+
+
 //////////////////////////////////////////////
 //        RemoteXY include library          //
 //////////////////////////////////////////////
@@ -17,14 +19,12 @@
 // RemoteXY configurate  
 #pragma pack(push, 1)
 uint8_t RemoteXY_CONF[] =
-  { 255,3,0,11,0,66,0,13,131,0,
-  1,2,11,42,12,12,65,31,49,0,
-  1,2,45,42,12,12,2,31,50,0,
-  1,2,80,42,12,12,2,31,51,0,
-  129,0,22,3,62,6,31,69,67,69,
-  32,80,82,79,74,69,67,84,32,76,
-  65,77,80,0,67,5,37,21,28,7,
-  2,26,11 };
+  { 255,3,0,0,0,45,0,13,13,2,
+  1,0,15,31,12,12,15,31,12,12,
+  2,31,88,0,1,0,47,32,12,12,
+  46,32,12,12,2,31,88,0,1,0,
+  74,31,12,12,53,31,12,12,2,31,
+  88,0 };
   
 // this structure defines all the variables and events of your control interface 
 struct {
@@ -33,9 +33,6 @@ struct {
   uint8_t Mode_1; // =1 if button pressed, else =0 
   uint8_t Mode_2; // =1 if button pressed, else =0 
   uint8_t Mode_3; // =1 if button pressed, else =0 
-
-    // output variables
-  char Mode_Label[11];  // string UTF8 end zero 
 
     // other variable
   uint8_t connect_flag;  // =1 if wire connected, else =0 
@@ -46,5 +43,6 @@ struct {
 /////////////////////////////////////////////
 //           END RemoteXY include          //
 /////////////////////////////////////////////
+
 
 
