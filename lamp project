@@ -46,7 +46,7 @@ uint8_t RemoteXY_CONF[] =
   1,2,80,42,12,12,2,31,51,0,
   129,0,22,3,62,6,31,69,67,69,
   32,80,82,79,74,69,67,84,32,76,
-  65,77,80,0,67,5,37,21,27,8,
+  65,77,80,0,67,5,41,23,20,5,
   2,26,11 };
   
 // this structure defines all the variables and events of your control interface 
