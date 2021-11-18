@@ -1,25 +1,6 @@
-//Our final project code
-// Caleb's Test Build 1.0
-// UNTESTED! Discuss Diagram before testing code!
-//
-// To Do: Color LED Indicator, Bluetooth, Debugging
-
-
-
-//Our final project code
-// Caleb's Test Build 1.0
-// UNTESTED! Discuss Diagram before testing code!
-//
-// To Do: Color LED Indicator, Bluetooth, Debugging
-
-
-
-
-
-
-
-
-
+// CURRENT BUILD 11-18-2021
+// Bluetooth was redone from scratch again, still doesn't work.
+// I tested the module with the Lab 9 code again, and it works perfectly fine, so the issue is NOT the wiring nor the module itself.
 
 //////////////////////////////////////////////
 //        RemoteXY include library          //
@@ -32,33 +13,34 @@
 #include <RemoteXY.h>
 
 // RemoteXY connection settings 
-#define REMOTEXY_SERIAL_RX 3
-#define REMOTEXY_SERIAL_TX 2
+#define REMOTEXY_SERIAL_RX 2
+#define REMOTEXY_SERIAL_TX 3
 #define REMOTEXY_SERIAL_SPEED 9600
 
 
 // RemoteXY configurate  
 #pragma pack(push, 1)
 uint8_t RemoteXY_CONF[] =
-  { 255,3,0,11,0,66,0,13,131,0,
-  1,2,11,42,12,12,65,31,49,0,
-  1,2,45,42,12,12,2,31,50,0,
-  1,2,80,42,12,12,2,31,51,0,
-  129,0,22,3,62,6,31,69,67,69,
-  32,80,82,79,74,69,67,84,32,76,
-  65,77,80,0,67,5,37,20,27,10,
+  { 255,4,0,11,0,66,0,13,13,1,
+  1,0,26,20,12,12,2,31,79,102,
+  102,0,1,0,4,20,12,12,2,31,
+  79,78,0,1,0,47,20,12,12,2,
+  31,65,117,116,111,0,2,0,22,82,
+  22,11,2,26,31,31,79,78,0,77,
+  117,116,101,0,67,5,16,43,33,11,
   2,26,11 };
   
 // this structure defines all the variables and events of your control interface 
 struct {
 
     // input variables
-  uint8_t Mode_1; // =1 if button pressed, else =0 
   uint8_t Mode_2; // =1 if button pressed, else =0 
+  uint8_t Mode_1; // =1 if button pressed, else =0 
   uint8_t Mode_3; // =1 if button pressed, else =0 
+  uint8_t Buzzer; // =1 if switch ON and =0 if OFF 
 
     // output variables
-  char Mode_Label[11];  // string UTF8 end zero 
+  char text_1[11];  // string UTF8 end zero 
 
     // other variable
   uint8_t connect_flag;  // =1 if wire connected, else =0 
@@ -75,9 +57,13 @@ struct {
 
 
 
+
+
+
+
 #include <LiquidCrystal.h>
-//#include <IRremote.h>
-LiquidCrystal lcd(2,3,4,5,6,7);
+#include "pitches.h"
+LiquidCrystal lcd(4,5,6,7,8,12);
 
 
 
@@ -90,7 +76,8 @@ const int photoPin = A0,  // Photoresistor pin
   indicatorPinBLUE = 9,   // Color LED pins
   indicatorPinGREEN = 10, //
   indicatorPinRED = 11,   //
-  lampPin = 12;           // Lamp LED pin
+  lampPin = A5,           // Lamp LED pin
+  passive_buzzer = 13;    // Passive buzzer
 
 
 
@@ -98,18 +85,20 @@ int lampMode = 0,         // Variable for current lamp mode
   timer,                  // Variable for the no-motion timer
   conditionaLightLevel;   // Variable for the light level to check against
 
+bool madeAchange = false;
 
 
-//IRrecv irrecv(irPin);
-//decode_results results;
+// Melodies for passive buzzer
+int melody_on[] = {NOTE_E5, NOTE_F5, NOTE_G5},
+    melody_off[] = {NOTE_G5, NOTE_F5, NOTE_E5},
+    melody_auto[] = {NOTE_E5, NOTE_F5, NOTE_F5},
+    melody_standby[] = {NOTE_F5, NOTE_F5, NOTE_E5};
 
 
 
 void setup()
 {
   RemoteXY_Init ();
-  Serial.begin(9600);
-  // irrecv.enableIRIn();
 
 
   // Defining pin modes (To Do: Color LED pins, Bluetooth Pins)
@@ -119,6 +108,7 @@ void setup()
   pinMode(indicatorPinBLUE, OUTPUT);
   pinMode(indicatorPinGREEN, OUTPUT);
   pinMode(indicatorPinRED, OUTPUT);
+  pinMode(passive_buzzer, OUTPUT);
 
   // To Do: Turn on Color LED (White maybe?) for setup for accurate reading from photoresistor
 
@@ -135,8 +125,10 @@ void setup()
 
   // Getting conditional light level
   digitalWrite(lampPin, HIGH);
+  tone(passive_buzzer, NOTE_B5, 500);
   delay(100);
-  conditionaLightLevel = analogRead(photoPin) + (100);
+  conditionaLightLevel = analogRead(photoPin) + (50);
+  delay(100);
   digitalWrite(lampPin, LOW);
 
   // Displaying confirmation message, setting lampMode to Auto, delay 1 second
@@ -150,53 +142,109 @@ void setup()
 
 void loop()
 {
-  // Lamp Mode MANUAL ON
-  // To Do: Color LED indicator ON (Green? Dim)
+
   RemoteXY_Handler ();
+
+
+
+
+
+
+
+
+  
   while (lampMode == 1)
   {
-    analogWrite(indicatorPinBLUE, LOW);
-    analogWrite(indicatorPinGREEN, 50);
-    analogWrite(indicatorPinRED, LOW);
+    if(madeAchange)
+    {
+      for(int thisNote = 0; thisNote < 3; thisNote++)
+      {
+        tone(passive_buzzer, melody_on[thisNote], 200);
+        delay(200);
+      }
+      
+      analogWrite(indicatorPinBLUE, LOW);
+      analogWrite(indicatorPinGREEN, 50);
+      analogWrite(indicatorPinRED, LOW); 
 
+      lcd.clear();
+      lcd.print("Mode: On");    
+      digitalWrite(lampPin, HIGH);
+      madeAchange = false;
+    }
     
-    lcd.clear();
-    lcd.print("Mode: On");    
-    digitalWrite(lampPin, HIGH);
     performButtonChecks();
   }
 
 
 
-  // Lamp Mode MANUAL OFF
-  // To Do: Color LED indicator ON (Red? Dim)
+
+
+
+
+
+
+
+
+
+
+
   while (lampMode == 2)
   {
-    analogWrite(indicatorPinBLUE, LOW);
-    analogWrite(indicatorPinGREEN, LOW);
-    analogWrite(indicatorPinRED, 50);
+    if(madeAchange)
+    {
+      for(int thisNote = 0; thisNote < 3; thisNote++)
+      {
+        tone(passive_buzzer, melody_off[thisNote], 200);
+        delay(200);
+      }
+      
+      analogWrite(indicatorPinBLUE, LOW);
+      analogWrite(indicatorPinGREEN, LOW);
+      analogWrite(indicatorPinRED, 50);
 
 
     
-    lcd.clear();
-    lcd.print("Mode: Off");
-    digitalWrite(lampPin, LOW);
+      lcd.clear();
+      lcd.print("Mode: Off");
+      digitalWrite(lampPin, LOW);
+      
+      madeAchange = false;
+    }
+    
     performButtonChecks();
   }
 
 
 
-  // Lamp Mode AUTOMATIC
-  // To Do: Color LED indicator ON (Yellow? Dim)
+
+
+
+
+
+
+
+
+
+
   while (lampMode == 3)
   {
-    analogWrite(indicatorPinBLUE, LOW);
-    analogWrite(indicatorPinGREEN, 25);
-    analogWrite(indicatorPinRED, 25);
-
-    
+    if(madeAchange)
+    {
+      for(int thisNote = 0; thisNote < 3; thisNote++)
+      {
+        tone(passive_buzzer, melody_auto[thisNote], 200);
+        delay(200);
+      }
+      
+      analogWrite(indicatorPinBLUE, LOW);
+      analogWrite(indicatorPinGREEN, 25);
+      analogWrite(indicatorPinRED, 50); 
+      madeAchange = false;
+    }
     lcd.clear();
     lcd.print("Mode: Auto");
+    
     if (analogRead(photoPin) < conditionaLightLevel)
     {
       digitalWrite(lampPin, HIGH);  
@@ -210,9 +258,9 @@ void loop()
         lcd.print("No User Detected");
         
         timer = 0;
-        while ( ( (timer < 46) && (analogRead(photoPin) < conditionaLightLevel) ) && ( (digitalRead(pirPin) == LOW) && (lampMode == 3) ) )
+        while ( ( (timer < 31) && (analogRead(photoPin) < conditionaLightLevel) ) && ( (digitalRead(pirPin) == LOW) && (lampMode == 3) ) )
         {
-          Serial.println(timer);
+          // Serial.println(timer);
           if( (timer >= 10) && (timer < 15 ) )
           {
             lcd.setCursor(0,1);
@@ -228,15 +276,18 @@ void loop()
             lcd.setCursor(0,1);
             lcd.print("    seconds     ");
             lcd.setCursor(0,1);
-            lcd.print(45 - timer);
+            lcd.print(30 - timer);
           }
           delay(500);
           timer++;
 
           performButtonChecks();
           
-          if (timer == 45)
+          if (timer >= 30)
+          {
             lampMode = 4;
+            madeAchange = true;
+          }
           
         }
       }
@@ -250,64 +301,66 @@ void loop()
 
 
 
-  // Lamp Mode STANDBY
-  // To Do: Color LED ON (Orange? Very dim)
+
+
+
+
+
+
+
   while (lampMode == 4)
   {
-    analogWrite(indicatorPinBLUE, LOW);
-    analogWrite(indicatorPinGREEN, 10);
-    analogWrite(indicatorPinRED, 25);
-
+    if(madeAchange)
+    {
+      for(int thisNote = 0; thisNote < 3; thisNote++)
+      {
+        tone(passive_buzzer, melody_standby[thisNote], 200);
+        delay(200);
+      }
+      
+      analogWrite(indicatorPinBLUE, LOW);
+      analogWrite(indicatorPinGREEN, 10);
+      analogWrite(indicatorPinRED, 25);
+      lcd.clear();
+      lcd.print("Mode: Standby");
+      digitalWrite(lampPin, LOW); 
+      
+      madeAchange = false;
+    }
     
-    lcd.clear();
-    lcd.print("Mode: Standby");
-    digitalWrite(lampPin, LOW);
     performButtonChecks();
     
     if ( (digitalRead(pirPin) == HIGH) || (analogRead(photoPin) > conditionaLightLevel) )
     {
       lampMode = 3;
+      madeAchange = true;
     }
   }  
 }
 
 
 
-// Sub-Function for button checks
-// To Do: Add Bluetooth Checks
+
 void performButtonChecks()
 {
-  /*
-  if(irrecv.decode(&results))
-  {
-   if (results.value == 0xFF30CF)
-    {
-     lampMode = 1;
-    }
-    else if (results.value == 0xFF18E7)
-    {
-     lampMode = 2;
-    }
-    else if (results.value == 0xFF7A85)
-    {
-     lampMode = 3;
-    } 
-  }
-  */
+
   if(RemoteXY.Mode_1 != 0)
   {
     RemoteXY.Mode_1 = 0;
     lampMode = 1;
+    madeAchange = true;
   }
   else if(RemoteXY.Mode_2 != 0)
   {
     RemoteXY.Mode_2 = 0;
     lampMode = 2;
+    madeAchange = true;
   }
   else if(RemoteXY.Mode_3 != 0)
   {
     RemoteXY.Mode_3 = 0;
     lampMode = 3;
+    madeAchange = true;
   }
 
   
@@ -318,8 +371,8 @@ void performButtonChecks()
     {
       lampMode = 1;
     }
+    madeAchange = true;
   }
   
-  //irrecv.resume();
   delay(500);
 }
