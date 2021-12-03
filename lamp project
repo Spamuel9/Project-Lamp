@@ -59,15 +59,15 @@ struct {
 
 
 
-
+//include statements for the LCD
 #include <LiquidCrystal.h>
-#include "pitches.h"
 LiquidCrystal lcd(4,5,6,7,8,12);
 
+//include the pitches library for passive buzzer
+#include "pitches.h"
 
 
-
-
+//all pin names declared here with corresponding pins
 const int photoPin = A0,  // Photoresistor pin
 	buttonPin = A1,         // Push Button pin
 	bluetoothPin1 = A2,     // Bluetooth pins
@@ -93,7 +93,7 @@ int lampMode = 0,         // Variable for current lamp mode
   
   
   
-  
+  // long integer variables to decrease number of sensor readings and help with countdown timer
 unsigned long previousMillis = 0;
 const long interval = 1000;
 
@@ -102,9 +102,9 @@ const long interval = 1000;
 
 
 
-bool madeAchange = false,
-	autoON = false,
-	motion = true;
+bool madeAchange = false, //boolean variable that is true if a sensor reads a change, false otherwise
+	autoON = false, //boolean variable that is true if light level is lower than conditional light level
+	motion = true; //boolean variable that is true if motion is detected 
 
 
 
@@ -113,8 +113,8 @@ bool madeAchange = false,
 
 
 // Melodies for passive buzzer
-int melody_on[] = {NOTE_E5, NOTE_F5, NOTE_G5},
-	melody_off[] = {NOTE_G5, NOTE_F5, NOTE_E5},
+int melody_on[] = {NOTE_E5, NOTE_F5, NOTE_G5}, //upwards sounding chime
+	melody_off[] = {NOTE_G5, NOTE_F5, NOTE_E5}, //downwards sounding chime
 	melody_auto[] = {NOTE_E5, NOTE_F5, NOTE_F5},
 	melody_standby[] = {NOTE_F5, NOTE_F5, NOTE_E5};
 
@@ -127,7 +127,8 @@ int melody_on[] = {NOTE_E5, NOTE_F5, NOTE_G5},
 void setup()
 {
 	RemoteXY_Init ();
-
+	
+	//set pin modes to input or output accordingly 
 	pinMode(buttonPin, INPUT_PULLUP);  
 	pinMode(pirPin, INPUT);
 	pinMode(lampPin, OUTPUT);
@@ -135,7 +136,8 @@ void setup()
 	pinMode(indicatorPinGREEN, OUTPUT);
 	pinMode(indicatorPinRED, OUTPUT);
 	pinMode(passive_buzzer, OUTPUT);
-
+	
+	//beginning command for LCD
 	lcd.begin(16,2);
 
 
@@ -179,16 +181,22 @@ void loop()
 
 	performButtonChecks();
 	
+	//if a change is detected by any input
 	if(madeAchange)
 	{
+		//sounds buzzer if not muted via bluetooth
 		if(RemoteXY.Buzzer == 1)
 		{
 			soundBuzzer();
 		}
 		delay(500);
+		//updates indicator(color LED) by calling subfunction
 		updateIndicator(); 
+		//updates the message on LCD by calling subfunction
 		updateLCD();
+		//resets timer function
 		timer = 0;
+		//resets bool madeAchange variable to false
 		madeAchange = false;
 	}
 	
@@ -196,12 +204,15 @@ void loop()
 	
 	
 	
-	
+	//auto mode
 	if(lampMode == 3)
 	{
+		//calls subfunction to check light level
 		readLightLevel();
+		//calls subfunction to check for motion
 		readPIR();
 		
+		//starts countdown if no motion, resets countdown if motion detected
 		if(currentMillis - previousMillis >= interval)
 		{
 			previousMillis = currentMillis;
@@ -219,19 +230,20 @@ void loop()
 	}
 	
 	
-	
+	//standby mode
 	if(lampMode == 4)
 	{
-    readLightLevel();
-    readPIR();
-    
+		//check light level and motion
+    		readLightLevel();
+    		readPIR();
+    		//if system is not in auto mode or motion is detected, set system to auto mode and set bool variable madeAchange to true
 		if (!autoON || motion)
 		{
 			lampMode = 3;
 			madeAchange = true;
 		}
 	} 
-	
+	//calls subfunction to turn lamp on or off depending on current mode
 	updateLamp();
 }
 
@@ -241,30 +253,30 @@ void loop()
 
 
 
-
+//void function to check for RemoteXY changes, set the lamp mode accordingly, and set the madeAchange variable to true
 void performButtonChecks()
 {
+	
+	  if(RemoteXY.Mode_1 != 0)
+	  {
+	    RemoteXY.Mode_1 = 0;
+	    lampMode = 1;
+	    madeAchange = true;
+	  }
+	  else if(RemoteXY.Mode_2 != 0)
+	  {
+	    RemoteXY.Mode_2 = 0;
+	    lampMode = 2;
+	    madeAchange = true;
+	  }
+	  else if(RemoteXY.Mode_3 != 0)
+	  {
+	    RemoteXY.Mode_3 = 0;
+	    lampMode = 3;
+	    madeAchange = true;
+  }
 
-  if(RemoteXY.Mode_1 != 0)
-  {
-    RemoteXY.Mode_1 = 0;
-    lampMode = 1;
-    madeAchange = true;
-  }
-  else if(RemoteXY.Mode_2 != 0)
-  {
-    RemoteXY.Mode_2 = 0;
-    lampMode = 2;
-    madeAchange = true;
-  }
-  else if(RemoteXY.Mode_3 != 0)
-  {
-    RemoteXY.Mode_3 = 0;
-    lampMode = 3;
-    madeAchange = true;
-  }
-
-  
+  //if onboard push button is pressed, the lampmode cycles once
   if(digitalRead(buttonPin) == LOW)
   {
     lampMode++;
@@ -284,10 +296,10 @@ void performButtonChecks()
 
 
 
-
+//void function for buzzer sounds
 void soundBuzzer()
 {
-	if(lampMode == 1)
+	if(lampMode == 1) //plays 'on' melody when lamp is turned on
 	{
 		for(int thisNote = 0; thisNote < 3; thisNote++)
 		{
@@ -295,7 +307,7 @@ void soundBuzzer()
 			delay(250);
 		}
 	}
-	else if(lampMode == 2)
+	else if(lampMode == 2) //plays 'off' melody when lamp is turned off
 	{
 		for(int thisNote = 0; thisNote < 3; thisNote++)
 		{
@@ -303,7 +315,7 @@ void soundBuzzer()
 			delay(250);
 		}
 	}
-	else if(lampMode == 3)
+	else if(lampMode == 3) //plays 'auto' melody when lamp goes into auto mode
 	{
 		for(int thisNote = 0; thisNote < 3; thisNote++)
 		{
@@ -311,7 +323,7 @@ void soundBuzzer()
 			delay(250);
 		}
 	}
-	else if(lampMode == 4)
+	else if(lampMode == 4) //plays 'standby' melody when lamp goes into standby mode
 	{
 		for(int thisNote = 0; thisNote < 3; thisNote++)
 		{
@@ -329,27 +341,31 @@ void soundBuzzer()
 
 
 
-
+//void function to update the color LED indicator
 void updateIndicator()
 {
+	//if lamp is on, indicator light is set to green
 	if(lampMode == 1)
 	{
 		analogWrite(indicatorPinBLUE, LOW);
 		analogWrite(indicatorPinGREEN, 50);
 		analogWrite(indicatorPinRED, LOW);
 	}
+	//if lamp is off, indicator light is set to red
 	else if(lampMode == 2)
 	{
 		analogWrite(indicatorPinBLUE, LOW);
 		analogWrite(indicatorPinGREEN, LOW);
 		analogWrite(indicatorPinRED, 50);
 	}
+	//if lamp is in auto, indicator light is set to yellow
 	else if(lampMode == 3)
 	{
 		analogWrite(indicatorPinBLUE, LOW);
 		analogWrite(indicatorPinGREEN, 25);
 		analogWrite(indicatorPinRED, 50);
 	}
+	//if lamp is in standby, indicator light is set to orange
 	else if(lampMode == 4)
 	{
 		analogWrite(indicatorPinBLUE, LOW);
@@ -365,7 +381,7 @@ void updateIndicator()
 
 
 
-
+//void function to update the message on the LCD according to the mode it is in
 void updateLCD()
 {
 	if(lampMode == 1)
@@ -400,7 +416,7 @@ void updateLCD()
 
 
 
-
+//void function to update the lamp(led) acccording to the mode the system is in
 void updateLamp()
 {
 	if(lampMode == 1)
@@ -433,7 +449,7 @@ void updateLamp()
 
 
 
-
+//void function to read the light level in the room and set the autoON variable accordingly
 void readLightLevel()
 {
 	if(analogRead(photoPin) < conditionaLightLevel)
@@ -447,7 +463,7 @@ void readLightLevel()
 }
 
 
-
+//void function to check for motion nearby and set the motion variable accordingly
 void readPIR()
 {
 	if(digitalRead(pirPin) == HIGH)
@@ -461,7 +477,7 @@ void readPIR()
 }
 
 
-
+//void function to update the countdown until standby mode on the lcd. It does so when the countdown reaches 0(timer reaches 30)
 void updateCountdown()
 {
 	if(timer == 0)
