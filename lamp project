@@ -1,332 +1,567 @@
-//Our final project code
-// PSEUDOCODE
-/*
-global variable lampMode;
-#include <LiquidCrystal.h>;
-#include <IRremote.h>;
-LiquidCrystal lcd(7,8,9,10,11,12);
-
-
-
-
-
-void performButtonChecks ()
-{
-	if ( ( (ir button 1 = pressed) || (bluetooth button 1 = pressed) ) || (button 1 = pressed) )
-		lampMode = 1
-	else if ( ( (ir button 2 = pressed) || (bluetooth button 2 = pressed) ) || (button 2 = pressed) )
-		lampMode = 2
-	else if ( ( (ir button 3 = pressed) || (bluetooth button 3 = pressed) ) || (button 3 = pressed) )
-		lampMode = 3
-}
-
-
-void setup()
-{
-
-lcd.begin(16,2); //sets lcd rows and columns
-lcd.setCursor(0,0);
-	
-	lcd.print "Turn off lights and press 1"
-	while ( (ir button is NOT pressed) AND (bluetooth button is NOT pressed) AND (button is NOT pressed) )
-	{
-		delay(1000);
-	}
-	current light level = roomONlampOFF
-
-	delay(500)
-	lampPin = HIGH
-	delay(500)
-	current light level = roomONlampON
-	delay(500)
-	lampPin = LOW
-
-	lcd.print "Turn off lights and press 1"
-	while (ir button is NOT pressed)
-	{
-		delay(1000)
-	}
-	current light level = roomLightOff
-
-	delay(500)
-	lampPin = HIGH
-	delay(500)
-	current light level = roomOFFlampON
-	delay(500)
-	lampPin = LOW
-	lampMode = 3
-}
-
-loop
-{
-	while (lampMode = 1)
-	{
-		lampPin = HIGH
-		performButtonCheck
-		delay(1000)
-	}
-
-
-
-	while (lampMode = 2)
-	{
-		lampPin = LOW
-		performButtonCheck
-		delay(1000)
-	}
-
-
-
-	while (lampMode = 3)
-	{
-		if (current light level < conditional level)
-		{
-			lampPin = HIGH
-			if (NO motion detected)
-			{
-				for (int i = 0; i < 30; i++)
-				{
-					lcd.print "No user detected, powering off in "
-					lcd.print (30 - i)
-					lcd.print " seconds."
-					delay(1000)
-					performButtonCheck
-					if (motion detected)
-						break;
-					else if (current light level > conditional level)
-						break;
-					if (i = 30)
-						lampMode = 4 (standby mode);
-				}
-			}
-		}
-		else // (current light level > conditional level)
-		{
-			lampPin = LOW
-		}
-	}
-
-
-
-	while (lampMode = 4)
-	{
-		lampPin = LOW
-		performButtonCheck
-		if ( (motion detected) || (light level > conditional level) )
-		{
-			lampMode = 3
-		}
-	}
-}	
-*/
-
-
-
-
-// Caleb's Test Build 1.0
-// UNTESTED! Discuss Diagram before testing code!
+// Final Code Candidate 2
 //
-// To Do: Color LED Indicator, Bluetooth, Debugging
+// Project Name, Description, and our names here?
 
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////
+//        RemoteXY include library          //
+//////////////////////////////////////////////
+
+// RemoteXY select connection mode and include library 
+#define REMOTEXY_MODE__SOFTSERIAL
+#include <SoftwareSerial.h>
+
+#include <RemoteXY.h>
+
+// RemoteXY connection settings 
+#define REMOTEXY_SERIAL_RX A2
+#define REMOTEXY_SERIAL_TX A1
+#define REMOTEXY_SERIAL_SPEED 9600
+
+
+// RemoteXY configurate  
+#pragma pack(push, 1)
+uint8_t RemoteXY_CONF[] =
+  { 255,4,0,17,0,66,0,13,13,1,
+  1,0,26,20,12,12,2,31,79,102,
+  102,0,1,0,4,20,12,12,2,31,
+  79,78,0,1,0,47,20,12,12,2,
+  31,65,117,116,111,0,2,0,22,76,
+  22,11,2,26,31,31,79,78,0,77,
+  117,116,101,0,67,4,5,42,54,9,
+  2,26,17 };
+  
+// this structure defines all the variables and events of your control interface 
+struct {
+
+    // input variables
+  uint8_t Mode_2; // =1 if button pressed, else =0 
+  uint8_t Mode_1; // =1 if button pressed, else =0 
+  uint8_t Mode_3; // =1 if button pressed, else =0 
+  uint8_t Buzzer; // =1 if switch ON and =0 if OFF 
+
+    // output variables
+  char Text_Box[17];  // string UTF8 end zero 
+
+    // other variable
+  uint8_t connect_flag;  // =1 if wire connected, else =0 
+
+} RemoteXY;
+#pragma pack(pop)
+
+/////////////////////////////////////////////
+//           END RemoteXY include          //
+/////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+//include statements for the LCD
 #include <LiquidCrystal.h>
-#include <IRremote.h>
 LiquidCrystal lcd(2,3,4,5,6,7);
 
-
-
-const int photoPin = A0,  // Photoresistor pin
-  buttonPin = A1,         // Push Button pin
-  bluetoothPin1 = A2,     // Bluetooth pins
-  bluetoothPin2 = A3,     //
-  irPin = A4,             // IR Remote Receiver pin
-  pirPin = A5,            // Motion Sensor pin
-  indicatorPinBLUE = 9,   // Color LED pins
-  indicatorPinGREEN = 10, //
-  indicatorPinRED = 11,   //
-  lampPin = 12;           // Lamp LED pin
+//include the pitches library for passive buzzer
+#include "pitches.h"
 
 
 
-int lampMode = 0,         // Variable for current lamp mode
-  timer,                  // Variable for the no-motion timer
-  conditionaLightLevel;   // Variable for the light level to check against
+//all pin names declared here with corresponding pins
+const int photoPin = A3;  			// Photoresistor pin
+const int buttonPin = A0;         	// Push Button pin
+const int pirPin = A4;            	// Motion Sensor pin
+const int indicatorPinBLUE = 9;   	// Color LED pins
+const int indicatorPinGREEN = 10; 	//
+const int indicatorPinRED = 11;  	//
+const int lampPin = 12;           	// Lamp LED pin
+const int passive_buzzer = 8;   	// Passive buzzer
 
 
 
-IRrecv irrecv(irPin);
-decode_results results;
+
+
+
+
+int lampMode = 0;         	// Variable for current lamp mode
+int timer = 0;            	// Variable for timer to standby mode
+int conditionaLightLevel;   // Variable for the light level to check against
+
+const int countdownLength = 7;	// Constant for time until standby mode in seconds
+  
+  
+  
+  
+  
+// Variables to record milliseconds since board startup to measure time passage without using the delay command
+unsigned long previousMillis = 0;	// Variable for millisecond count at previous interval
+unsigned long currentMillis = 0;	// Variable for current milliseconds since board startup
+const long interval = 1000;			// Number of milliseconds per interval (1 second)
+
+
+
+
+
+
+bool madeAchange = false;	// Boolean variable that is true if the lamp mode changed, false otherwise
+bool autoON = false;		// Boolean variable that is true if light level is lower than conditional light level, false otherwise
+bool motion = true;			// Boolean variable that is true if motion is detected, false otherwise
+
+
+
+
+
+
+
+// Melodies for passive buzzer
+int melody_on[] = {NOTE_E5, NOTE_F5, NOTE_G5};		// Upwards-sounding chime
+int melody_off[] = {NOTE_G5, NOTE_F5, NOTE_E5};		// Downwards-sounding chime
+int melody_auto[] = {NOTE_E5, NOTE_F5, NOTE_F5};	// Slightly-climbing chime
+int melody_standby[] = {NOTE_F5, NOTE_F5, NOTE_E5};	// Slightly-falling chime
+
+
+
+
 
 
 
 void setup()
 {
-  Serial.begin(9600);
-  irrecv.enableIRIn();
+  RemoteXY_Init ();
 
-
-  // Defining pin modes (To Do: Color LED pins, Bluetooth Pins)
+  // Set pin modes to input or output accordingly 
   pinMode(buttonPin, INPUT_PULLUP);  
   pinMode(pirPin, INPUT);
   pinMode(lampPin, OUTPUT);
+  pinMode(indicatorPinBLUE, OUTPUT);
+  pinMode(indicatorPinGREEN, OUTPUT);
+  pinMode(indicatorPinRED, OUTPUT);
+  pinMode(passive_buzzer, OUTPUT);
 
-  // To Do: Turn on Color LED (White maybe?) for setup for accurate reading from photoresistor
-
-  // Beginning LCD and running setup message
+  // Beginning command for LCD
   lcd.begin(16,2);
-  lcd.setCursor(0,0);  
+
+
+
+  // Light Level Calibration
+  //*********************************************
+  
+  
+  
+  // Turn lamp off
+  digitalWrite(lampPin, LOW);
+  
+  // Print instructions to LCD
+  // Instructing user to turn off room lights for calibration
+  // Then to press the push button
+  lcd.clear();  
   lcd.print("Turn off lights");
   lcd.setCursor(0,1);
-  lcd.print("& press a button");
+  lcd.print("& push button");
+  
+  // Loop until push button is pressed
+  while (digitalRead(buttonPin) != LOW)
+    continue;
 
-  // Run button Checks until a button is pressed (lampMode initialized at 0)
-  while (lampMode == 0)
-    performButtonChecks();
+  // Sound buzzer when button is pressed to indicate success
+  tone(passive_buzzer, NOTE_E5, 500);
 
-  // Getting conditional light level
+
+  // Turn on lamp to ensure light does not interfere with photoresistor
   digitalWrite(lampPin, HIGH);
-  delay(100);
-  conditionaLightLevel = analogRead(photoPin) + (100);
+  delay(500);
+  
+  // Set minimum light level to be equal to current light level plus a small amount to avoid accidental, rapid flashes
+  conditionaLightLevel = analogRead(photoPin) + (25);
+  
+  // Turn lamp off again
   digitalWrite(lampPin, LOW);
 
-  // Displaying confirmation message, setting lampMode to Auto, delay 1 second
+  // Print success message to LCD
   lcd.clear();
   lcd.print("Setup complete.");
+  
+  // Set initial lamp mode to Auto, set madeAchange to True
   lampMode = 3;
-  delay(1000);
+  madeAchange = true;
+  
+  
+  
+  
+  //*********************************************
+  // Light Level Calibration finished
+  
 }
+
+
+
+
+
+
+
 
 
 
 void loop()
 {
-  // Lamp Mode MANUAL ON
-  // To Do: Color LED indicator ON (Green? Dim)
-  while (lampMode == 1)
+  RemoteXY_Handler ();
+  
+  // Update current time in milliseconds since startup
+  currentMillis = millis();
+
+  // Check for lamp mode changes via buttons
+  performButtonChecks();
+  
+  
+  
+  
+  // If lamp mode has been changed, enter
+  if(madeAchange)
   {
-    lcd.clear();
-    lcd.print("Mode: On");    
-    digitalWrite(lampPin, HIGH);
-    performButtonChecks();
-  }
+    if(RemoteXY.Buzzer == 1) // Sound buzzer upon mode change if not muted via bluetooth
+      soundBuzzer();
 
 
-
-  // Lamp Mode MANUAL OFF
-  // To Do: Color LED indicator ON (Red? Dim)
-  while (lampMode == 2)
+    delay(500);
+	// Updates indicator (color LED) by calling subfunction
+    updateIndicator(); 
+	// Updates the message on LCD by calling subfunction
+    updateLCD();
+	// Resets Standby countdown timer
+    timer = 0;
+	// Resets bool variable madeAchange to false
+    madeAchange = false;
+	
+  } // end if
+  
+  
+  
+  
+  
+  
+  
+  // If lamp is in Auto mode, enter
+  if(lampMode == 3)
   {
-    lcd.clear();
-    lcd.print("Mode: Off");
-    digitalWrite(lampPin, LOW);
-    performButtonChecks();
-  }
-
-
-
-  // Lamp Mode AUTOMATIC
-  // To Do: Color LED indicator ON (Yellow? Dim)
-  while (lampMode == 3)
-  {
-    lcd.clear();
-    lcd.print("Mode: Auto");
-    if (analogRead(photoPin) < conditionaLightLevel)
-    {
-      digitalWrite(lampPin, HIGH);  
-      
-      if (digitalRead(pirPin) == LOW)
-      {
-        
-        lcd.setCursor(0,1);
-        lcd.print("                ");
-        lcd.setCursor(0,1);
-        lcd.print("No User Detected");
-        
-        timer = 0;
-        while ( ( (timer < 46) && (analogRead(photoPin) < conditionaLightLevel) ) && ( (digitalRead(pirPin) == LOW) && (lampMode == 3) ) )
-        {
-          Serial.println(timer);
-          if( (timer >= 10) && (timer < 15 ) )
-          {
-            lcd.setCursor(0,1);
-            lcd.print("                ");
-            lcd.setCursor(0,1);
-            lcd.print("No User Detected");
-          }
-          
-          else if (timer >= 15)
-          {
-            lcd.setCursor(0,0);
-            lcd.print("Standby in:");
-            lcd.setCursor(0,1);
-            lcd.print("    seconds     ");
-            lcd.setCursor(0,1);
-            lcd.print(45 - timer);
-          }
-          delay(500);
-          timer++;
-
-          performButtonChecks();
-          
-          if (timer == 45)
-            lampMode = 4;
-          
-        }
-      }
-    }
-    else
-    {
-      digitalWrite(lampPin, LOW);
-    }
-    performButtonChecks();
-  }
-
-
-
-  // Lamp Mode STANDBY
-  // To Do: Color LED ON (Orange? Very dim)
-  while (lampMode == 4)
-  {
-    lcd.clear();
-    lcd.print("Mode: Standby");
-    digitalWrite(lampPin, LOW);
-    performButtonChecks();
+	// Calls subfunction to check light level
+    readLightLevel();
+	// Calls subfunction to check for motion
+    readPIR();
     
-    if ( (digitalRead(pirPin) == HIGH) || (analogRead(photoPin) > conditionaLightLevel) )
+	
+	// If 1 second has passed since last interval, enter
+    if(currentMillis - previousMillis >= interval)
+    {
+	  // Set previous millisecond count to current to begin next interval
+      previousMillis = currentMillis;
+	  
+	  
+	  // Increments countdown if lamp is ON and no motion, resets countdown if lamp is OFF or motion detected
+      if(autoON && !motion)
+        timer++;
+	
+      else
+        timer = 0;
+	
+	
+	
+	  // Update countdown on LCD by calling subfunction
+      updateCountdown();
+	  
+	  
+    } // end if
+    
+	
+	
+  } // end Auto mode if
+  
+  
+  
+  
+  
+  // If lamp is in Standby mode, enter
+  if(lampMode == 4)
+  {
+	// Check light level and motion
+    readLightLevel();
+    readPIR();
+    
+	// If light level changes or motion is detected, set lamp to Auto mode
+    if (!autoON || motion)
     {
       lampMode = 3;
-    }
-  }  
-}
+      madeAchange = true;
+    } // end if
+	
+	
+  } // end Standby mode if
+  
+  
+  
+  
+  // Calls subfunction to turn lamp on or off depending on current mode
+  updateLamp();
+  
+  
+} // End Void Loop
 
 
 
-// Sub-Function for button checks
-// To Do: Add Bluetooth Checks
+
+
+
+
+// Void function to check for push button or RemoteXY button changes, set the lamp mode accordingly, and set the madeAchange variable to true
 void performButtonChecks()
 {
-  if(irrecv.decode(&results))
+
+  if(RemoteXY.Mode_1 != 0)
   {
-   if (results.value == 0xFF30CF)
-    {
-     lampMode = 1;
-    }
-    else if (results.value == 0xFF18E7)
-    {
-     lampMode = 2;
-    }
-    else if (results.value == 0xFF7A85)
-    {
-     lampMode = 3;
-    } 
+    RemoteXY.Mode_1 = 0;
+    lampMode = 1;
+    madeAchange = true;
   }
+  else if(RemoteXY.Mode_2 != 0)
+  {
+    RemoteXY.Mode_2 = 0;
+    lampMode = 2;
+    madeAchange = true;
+  }
+  else if(RemoteXY.Mode_3 != 0)
+  {
+    RemoteXY.Mode_3 = 0;
+    lampMode = 3;
+    madeAchange = true;
+  }
+
+  // If onboard push button is pressed, the lampmode cycles once, returning to 1 if exceeding 3
   if(digitalRead(buttonPin) == LOW)
   {
     lampMode++;
     if(lampMode > 3)
-    {
       lampMode = 1;
+  
+    madeAchange = true;
+  } // End if
+  
+  
+} // End performButtonChecks
+
+
+
+
+
+
+
+
+
+// Void function for buzzer sounds
+void soundBuzzer()
+{
+  if(lampMode == 1) // Plays 'on' melody when lamp is turned on
+  {
+    for(int thisNote = 0; thisNote < 3; thisNote++)
+    {
+      tone(passive_buzzer, melody_on[thisNote], 250);
+      delay(250);
     }
   }
-  irrecv.resume();
-  delay(500);
-}
+  else if(lampMode == 2) // Plays 'off' melody when lamp is turned off
+  {
+    for(int thisNote = 0; thisNote < 3; thisNote++)
+    {
+      tone(passive_buzzer, melody_off[thisNote], 250);
+      delay(250);
+    }
+  }
+  else if(lampMode == 3) // Plays 'auto' melody when lamp goes into auto mode
+  {
+    for(int thisNote = 0; thisNote < 3; thisNote++)
+    {
+      tone(passive_buzzer, melody_auto[thisNote], 250);
+      delay(250);
+    }
+  }
+  else if(lampMode == 4) // Plays 'standby' melody when lamp goes into standby mode
+  {
+    for(int thisNote = 0; thisNote < 3; thisNote++)
+    {
+      tone(passive_buzzer, melody_standby[thisNote], 250);
+      delay(250);
+    }
+  }
+} // End soundBuzzer
+
+
+
+
+
+
+
+
+
+// Void function to update the color LED indicator
+void updateIndicator()
+{
+  if(lampMode == 1) // If lamp is on, indicator light is set to green
+  {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 50);
+    analogWrite(indicatorPinRED, LOW);
+  }
+  else if(lampMode == 2) // If lamp is off, indicator light is set to red
+  {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, LOW);
+    analogWrite(indicatorPinRED, 50);
+  }
+  else if(lampMode == 3) // If lamp is in auto, indicator light is set to yellow
+  {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 25);
+    analogWrite(indicatorPinRED, 50);
+  }
+  else if(lampMode == 4) // If lamp is in standby, indicator light is set to orange
+  {
+    analogWrite(indicatorPinBLUE, LOW);
+    analogWrite(indicatorPinGREEN, 5);
+    analogWrite(indicatorPinRED, 30);
+  }
+} // End updateIndicator
+
+
+
+
+
+
+
+
+// Void function to update the message on the LCD and bluetooth app according to the mode it is in
+void updateLCD()
+{
+  if(lampMode == 1) // If lamp is in ON, display ON message
+  {
+    lcd.clear();
+    lcd.print("Mode: On");
+    strcpy(RemoteXY.Text_Box, "Mode: On");
+  }
+  else if(lampMode == 2) // If lamp is in OFF, display OFF message
+  {
+    lcd.clear();
+    lcd.print("Mode: Off");
+    strcpy(RemoteXY.Text_Box, "Mode: Off");
+  }
+  else if(lampMode == 3) // If lamp is in AUTO, display AUTO message
+  {
+    lcd.clear();
+    lcd.print("Mode: Auto");
+    strcpy(RemoteXY.Text_Box, "Mode: Auto");
+  }
+  else if(lampMode == 4) // If lamp is in STANDBY, display STANDBY message
+  {
+    lcd.clear();
+    lcd.print("Mode: Standby");
+    strcpy(RemoteXY.Text_Box, "Mode: Standby");
+  }
+} // End updateLCD
+
+
+
+
+
+
+
+// Void function to update the lamp(led) acccording to the mode the system is in
+void updateLamp()
+{
+  if(lampMode == 1) // If lamp is in ON, turn lamp ON
+    digitalWrite(lampPin, HIGH);
+  else if(lampMode == 2) // If lamp is in OFF, turn lamp OFF
+    digitalWrite(lampPin, LOW);
+  else if(lampMode == 3) // If lamp is in AUTO, check state of bool autoON (lamp OFF if false, ON if true)
+  {
+    if(autoON)
+      digitalWrite(lampPin, HIGH);
+    else
+      digitalWrite(lampPin, LOW);
+  }
+  else if(lampMode == 4) // If lamp is in STANDBY, turn lamp OFF
+    digitalWrite(lampPin, LOW);
+} // End updateLamp
+
+
+
+
+
+
+// Void function to read the light level in the room and set the autoON variable accordingly
+void readLightLevel()
+{
+  if(analogRead(photoPin) < conditionaLightLevel) // If light level is less than the minimum, turn on lamp
+    autoON = true;
+  else
+    autoON = false;
+} // End readLightLevel
+
+
+
+
+
+
+
+
+// Void function to check for motion nearby and set the motion variable accordingly
+void readPIR()
+{
+  if(digitalRead(pirPin) == HIGH)
+    motion = true;
+  else
+    motion = false;
+} // End readPIR
+
+
+
+
+
+
+
+
+
+
+// Void function to update the countdown until standby mode on the LCD. It does so when the countdown reaches 0 (timer reaches 7 seconds)
+void updateCountdown()
+{
+  if(timer == 0) // If timer is 0, clear bottom row of the LCD
+  {
+    lcd.setCursor(0,1);
+    lcd.print("                ");
+  }
+  else if((timer > 0) && (timer < 2)) // If no user is detected, display message for 2 seconds
+  {
+    lcd.setCursor(0,1);
+    lcd.print("No User Detected");
+  }
+  else if((timer >= 2) && (timer < countdownLength)) // If no user is detected for more than 2 seconds, start countdown 
+  {
+    lcd.setCursor(0,1);
+    lcd.print("Standby in:    s");
+    lcd.setCursor(12,1);
+    lcd.print(countdownLength - timer);
+  }
+  else if(timer >= countdownLength) // If no user is detected for entire countdown length, set lamp mode to Standby
+  {
+    lampMode = 4;
+    madeAchange = true;
+  }
+  
+} // End updateCountdown
