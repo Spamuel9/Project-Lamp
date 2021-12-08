@@ -1,13 +1,19 @@
-// Final Code Candidate 2
-//
-// Project Name, Description, and our names here?
+// Final Code Candidate 2 
+// 12/08/2021
+/* Trent Raisanen, Caleb Theis, Samuel Cloutier 
+Final Project ECE 210 Fall 2021
+
+This code was written to control an automated desk lamp with 4 modes: On, Off, Auto, and Standby. The modes change based on various
+inputs and sensors, or changes made by the user via push-button or Bluetooth or the RemoteXY app. 
+Our program reads input from the Arduino board/sensors, and sends output to the Arduino board accordingly. The inputs include 
+a push button (which cycles through the modes), a PIR motion sensor (checks for motion and changes lamp mode if needed), and
+a photoresistor (checks the conditional light level and reads changes in light level when needed). Based on these inputs, we use
+several output reactions to control the lamp (represented by white LED) and the mode indicator(color LED). One output is a passive buzzer, which 
+produces different melodies for lamp mode changes. Another is the LCD, which displays the current mode and a countdown to standby, along with other various
+messages. We use subfunctions to carry out input checks and send output to the Arduino board and our circuit. */
 
 
-
-
-
-
-
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 //////////////////////////////////////////////
@@ -130,7 +136,7 @@ int melody_auto[] = {NOTE_E5, NOTE_F5, NOTE_F5};	// Slightly-climbing chime
 int melody_standby[] = {NOTE_F5, NOTE_F5, NOTE_E5};	// Slightly-falling chime
 
 
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -206,7 +212,7 @@ void setup()
 
 
 
-
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
